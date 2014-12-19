@@ -62,8 +62,8 @@ namespace CnC {
 
             /// \return true, if ready for communication etc.
             bool dist_ready() const { return m_distributionReady; };
-            void init_dist_ready() const;
-            void fini_dist_ready();
+            virtual void init_dist_ready() const;
+            virtual void fini_dist_ready();
 
             /// return true if distribution is enabled, false if not
             bool distributed() const { return m_distributionEnabled; }
@@ -76,6 +76,9 @@ namespace CnC {
             /// collections of a dist_context must get serialiazer through their containing dist_context
             /// when done, serializer must be freed by caller using "delete" (usually done in the Communicator)
             serializer * new_serializer( const distributable * ) const;
+
+            /// write envelope to serializer for given distributable (could be this)
+            void use_serializer( serializer & ser, const distributable * distbl ) const;
 
             /// collections of a dist_context must send their messages through their containing dist_context
             void send_msg( serializer *, int rcver ) const;

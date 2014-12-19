@@ -59,6 +59,7 @@ namespace CnC {
             virtual char prepare( step_delayer &, int &, const schedulable * );
             virtual void compute_on( int target );
             virtual const step_launcher_base< tag_type, range_type > * get_step_launcher() const { return m_stepLauncher; }
+            virtual void serialize( serializer & ser );
 
             bool prepare_from_range( tagged_step_instance< range_type > * rsi, const tag_type & tag, step_delayer & sD ) const;
             CnC::Internal::StepReturnValue_t execute_from_range( step_instance_base * rsi, const tag_type & tag ) const;
@@ -86,11 +87,11 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        // template< class StepLauncher >
-        // const std::string & step_instance< StepLauncher >::timing_name() const
-        // {
-        //     return step_timer< typename StepLauncher::step_type >::s_timingName;
-        // }
+        template< class StepLauncher >
+        void step_instance< StepLauncher >::serialize( serializer & ser )
+        {
+            m_stepLauncher->serialize_step( ser, this->m_tag.Value() );
+        }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 		

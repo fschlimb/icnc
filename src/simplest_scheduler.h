@@ -56,7 +56,7 @@ namespace CnC {
         class simplest_scheduler: public scheduler_i
         {
         public:
-            simplest_scheduler( context_base &, int numThreads, int );
+            simplest_scheduler( context_base &, bool subscribe, int numThreads, int );
             virtual ~simplest_scheduler();
             virtual void do_schedule( schedulable * stepInstance );
             virtual void wait( const inflight_counter_type & /*steps_in_flight*/ );

@@ -85,8 +85,8 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        simplest_prioritized_scheduler::simplest_prioritized_scheduler( context_base &context, int numThreads, int htstride ) 
-            : scheduler_i( context ),
+        simplest_prioritized_scheduler::simplest_prioritized_scheduler( context_base &context, bool subscribe, int numThreads, int htstride ) 
+            : scheduler_i( context, subscribe ),
               m_runQueue(),
               m_status(),
               m_allocated(),

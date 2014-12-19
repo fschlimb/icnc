@@ -58,7 +58,8 @@ namespace CnC {
 			virtual int affinity() const { return scheduler_i::AFFINITY_HERE; }
             virtual StepReturnValue_t execute() { return CNC_Success; } // do nothing
             virtual char prepare( step_delayer &, int &, const schedulable * ) { CNC_ABORT( "Unexpected code path taken" ); return CNC_Unfinished; }       // should never get called
-            virtual void compute_on( int ) { CNC_ABORT( "Internal step cannot be distributed." ); }
+            virtual void compute_on( int ) { CNC_ABORT( "Internal wakeup step cannot be distributed." ); }
+            virtual void serialize( serializer & ) { CNC_ABORT( "Internal wakeup step cannot be serialized." ); };
         };
 
         namespace {
@@ -183,8 +184,8 @@ namespace CnC {
         static tbb::queuing_rw_mutex _mtx;
 
         template< typename Q, bool use_affinity >
-        tbb_concurrent_queue_scheduler_base< Q, use_affinity >::tbb_concurrent_queue_scheduler_base( context_base & c, int numThreads, bool steal, int hts )
-            : scheduler_i( c ),
+        tbb_concurrent_queue_scheduler_base< Q, use_affinity >::tbb_concurrent_queue_scheduler_base( context_base & c, bool subscribe, int numThreads, bool steal, int hts )
+            : scheduler_i( c, subscribe ),
               m_steal( numThreads > 1 ? steal : false ),
               m_htstride( hts )
         {

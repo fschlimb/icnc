@@ -34,6 +34,9 @@
 #include <cnc/internal/cnc_stddef.h>
 
 namespace CnC {
+
+    class serializer;
+
     namespace Internal {
 
         class step_delayer;
@@ -107,6 +110,7 @@ namespace CnC {
             virtual StepReturnValue_t execute() = 0;
             virtual char prepare( step_delayer &, int &, const schedulable * ) = 0;
             virtual void compute_on( int target ) = 0;
+            virtual void serialize( serializer & ) = 0;
 
             // we need this for proper error messages
             virtual std::ostream & format( std::ostream & os ) const

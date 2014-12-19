@@ -66,7 +66,7 @@ namespace CnC {
         class tbb_concurrent_queue_scheduler_base : public scheduler_i
         {
         public:
-            tbb_concurrent_queue_scheduler_base( context_base &, int numThreads, bool steal, int hts );
+            tbb_concurrent_queue_scheduler_base( context_base &, bool subscribe, int numThreads, bool steal, int hts );
             virtual ~tbb_concurrent_queue_scheduler_base();
             virtual void do_schedule( schedulable * stepInstance );
             virtual void wait( const inflight_counter_type & steps_in_flight );

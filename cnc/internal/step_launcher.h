@@ -80,7 +80,9 @@ namespace CnC {
             virtual tagged_step_instance< tag_type > * create_step_instance( const Tag & tag, context_base & ctxt, bool compute_on ) const;
             virtual tagged_step_instance< range_type > * create_range_step_instance( const range_type & range, context_base & ctxt ) const;
             virtual bool timing() const;
+            void serialize_step( serializer & ser, const tag_type & ) const;
             void compute_on( const Tag & user_tag, int target ) const;
+            void serialize_range( serializer & ser, const range_type & range ) const;
             void compute_on_range( const range_type & range, int target ) const;
             virtual void recv_msg( serializer * ser );
 
@@ -307,6 +309,18 @@ namespace CnC {
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+
+        template< class Tag, class Step, class Arg, class TagTuner, class StepTuner >
+        void step_launcher< Tag, Step, Arg, TagTuner, StepTuner >::serialize_step( serializer & ser, const tag_type & user_tag ) const
+        {
+#ifdef _DIST_CNC_
+            this->context().use_serializer( ser, this );
+            ser & SC::TAG & user_tag;
+#endif
+        }
+
+        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         template< class Tag, class Step, class Arg, class TagTuner, class StepTuner >
         void step_launcher< Tag, Step, Arg, TagTuner, StepTuner >::compute_on( const Tag & user_tag, int target ) const
         {
@@ -325,6 +339,18 @@ namespace CnC {
             } else {
                 this->context().send_msg( _ser, target );
             }
+#endif
+        }
+
+        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+        template< class Tag, class Step, class Arg, class TagTuner, class StepTuner >
+        void step_launcher< Tag, Step, Arg, TagTuner, StepTuner >::serialize_range( serializer & ser, const range_type & range ) const
+        {
+#ifdef _DIST_CNC_
+            this->context().use_serializer( ser, this );
+            ser & SC::RANGE & range;
 #endif
         }
 

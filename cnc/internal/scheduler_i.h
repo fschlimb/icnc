@@ -43,6 +43,7 @@ namespace CnC {
 
         class schedulable;
         class context_base;
+        class distributed_scheduler;
 
 		/// This class represents the functionality for a scheduler.
         /// Concrete schedulers derive from this and implement virtual functions.
@@ -83,7 +84,7 @@ namespace CnC {
             /// opaque class to identify a group of steps which are waiting for a shared item.
             class suspend_group;
 
-            scheduler_i( context_base & );
+            scheduler_i( context_base &, bool subscribe );
             virtual ~scheduler_i();
 
             /// Call this to init capabilites for distCnC after creation
@@ -120,6 +121,10 @@ namespace CnC {
             /// \brief return false if no more user-steps in queues
             bool active()
             { return m_userStepsInFlight > 0; }
+
+            /// \brief return current number of prescribed and unfinished steps
+            bool num_steps_in_flight()
+            { return m_userStepsInFlight; }
 
             /// \brief return step instance the calling thread is running; might be NULL but only if root/env
             static schedulable * current();
@@ -206,6 +211,7 @@ namespace CnC {
             tbb::concurrent_bounded_queue< int > * m_barrier;      ///< simluates a conditional variable/semaphore
         private:
             const schedulable                    * m_step;         ///< step which created scheduler
+            distributed_scheduler                * m_balancer;     ///< distributed load balancer
             typedef scalable_vector_p< schedulable * > pending_list_type;
             pending_list_type                      m_pendingSteps; ///< steps which need a ping in wait_loop()
             pending_list_type                      m_seqSteps;     ///< steps which need sequentialized execution

@@ -136,6 +136,15 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+        void distributable_context::use_serializer( serializer & ser, const distributable * distbl ) const
+        {
+            int _did = distbl != this ? distbl->gid() : -1;
+            CNC_ASSERT( _did < (int)m_distributables.size() );
+            ser & _did;
+        }
+
+        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
         serializer * distributable_context::new_serializer( const distributable * distbl ) const
         {
             // an undocumented feature suggested by Arch to make the mutex-init therad-safe
@@ -149,9 +158,7 @@ namespace CnC {
                 CNC_ASSERT( dist_ready() );
             }
             serializer * _serlzr = distributor::new_serializer( this );
-            int _did = distbl != this ? distbl->gid() : -1;
-            CNC_ASSERT( _did < (int)m_distributables.size() );
-            (*_serlzr) & _did;
+            use_serializer( *_serlzr, distbl );
             return _serlzr;
         }
 

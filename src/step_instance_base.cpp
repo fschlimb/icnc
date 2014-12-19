@@ -52,9 +52,9 @@ namespace CnC {
             : schedulable( priority, sched ),
               m_context( graph ),
               m_getList(),
-              m_timer( NULL )
+              m_timer( NULL ),
+              m_id( -1 )
         {
-            m_id = m_context.incrementStepInstanceCount();
             LOG_STATS( m_context.stats(), step_created() );
         }
 
@@ -62,6 +62,12 @@ namespace CnC {
         step_instance_base::~step_instance_base()
         {
             delete m_timer;
+        }
+
+        void step_instance_base::enable_timing()
+        {
+            m_timer = new chronometer::step_timer;
+            m_id = m_context.incrementStepInstanceCount();
         }
 
     } //   namespace Internal

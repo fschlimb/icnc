@@ -82,6 +82,7 @@ namespace CnC {
             virtual CnC::Internal::StepReturnValue_t execute();
             virtual char prepare( step_delayer &, int &, const schedulable * );
             void compute_on( int target );
+            virtual void serialize( serializer & ser );
             virtual const step_launcher_base< Range, no_range > * get_step_launcher() const { return NULL; }
             
             // now the stuff needed for partitioner
@@ -265,6 +266,14 @@ namespace CnC {
         }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        template< class Tag, class Step, class Arg, class TagTuner, class StepTuner, class Range >
+        void range_step_instance< Tag, Step, Arg, TagTuner, StepTuner, Range >::serialize( serializer & ser )
+        {
+            this->m_stepLauncher.serialize_range( ser, this->m_tag.Value() );
+        }
+
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         template< class Tag, class Step, class Arg, class TagTuner, class StepTuner, class Range >

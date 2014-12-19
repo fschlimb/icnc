@@ -76,6 +76,7 @@ namespace CnC {
 
             int incrementStepInstanceCount() { return ++m_stepInstanceCount; }
             /// from distributable_context
+            virtual void fini_dist_ready();
             virtual void spawn_cleanup();
 
 			int numThreads() const { return m_numThreads; }
@@ -88,7 +89,7 @@ namespace CnC {
             void enter_quiescence();
 
         protected:
-            scheduler_i * new_scheduler();
+            scheduler_i * new_scheduler( bool sbuscribe );
             void delete_scheduler( scheduler_i * );
 
 

@@ -71,8 +71,8 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         
-        simplest_scheduler::simplest_scheduler( context_base &context, int numThreads, int htstride ) 
-            : scheduler_i( context ),
+        simplest_scheduler::simplest_scheduler( context_base &context, bool subscribe, int numThreads, int htstride ) 
+            : scheduler_i( context, subscribe ),
               m_status(),
               m_rootTask(),
               m_initTBB( std::max( 2, numThreads + ( distributor::myPid() == 0 ? 0 : 1 ) ) ),

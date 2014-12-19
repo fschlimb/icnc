@@ -65,10 +65,7 @@ namespace CnC {
             }
             // on remote processes we don't have the env-thread,
             // but we have a service thread which is triggered with wait() and work-waits
-            m_scheduler = new_scheduler();
-            if( ! is_dummy ) {
-                subscribe( m_scheduler );
-            }
+            m_scheduler = new_scheduler( ! is_dummy );
             m_stepInstanceCount = 0;
         }
 
@@ -86,7 +83,7 @@ namespace CnC {
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        scheduler_i * context_base::new_scheduler()
+        scheduler_i * context_base::new_scheduler( bool subscribe )
         {
             scheduler_i *_ts = NULL;
             const char * _sched = getenv( "CNC_SCHEDULER" );
@@ -109,23 +106,23 @@ namespace CnC {
 				if( ! strcmp( _sched, "FIFO_STEAL" ) ) {
 					if( _first ) oss << "Using FIFO_STEAL scheduler" << _prior << _pin;
 					if( _use_prior ) {
-						_ts = new tbb_concurrent_queue_prioritized_scheduler( *this, m_numThreads, true, _htstride );
+						_ts = new tbb_concurrent_queue_prioritized_scheduler( *this, subscribe, m_numThreads, true, _htstride );
 					} else  {
-						_ts = new tbb_concurrent_queue_scheduler( *this, m_numThreads, true, _htstride );
+						_ts = new tbb_concurrent_queue_scheduler( *this, subscribe, m_numThreads, true, _htstride );
 					}
 				} else if( ! strcmp( _sched, "FIFO_SINGLE" ) ) {
 					if( _first ) oss << "Using FIFO_SINGLE scheduler" << _prior << _pin;
 					if( _use_prior ) {
-						_ts = new tbb_concurrent_queue_prioritized_scheduler( *this, m_numThreads, true, _htstride );
+						_ts = new tbb_concurrent_queue_prioritized_scheduler( *this, subscribe, m_numThreads, true, _htstride );
 					} else  {
-						_ts = new tbb_concurrent_queue_scheduler( *this, m_numThreads, true, _htstride );
+						_ts = new tbb_concurrent_queue_scheduler( *this, subscribe, m_numThreads, true, _htstride );
 					}
 				} else if( ! strcmp( _sched, "FIFO_AFFINITY" ) ) {
 					if( _first ) oss << "Using FIFO_AFFINITY scheduler" << _prior << _pin;
 					if( _use_prior ) {
-						_ts = new tbb_concurrent_queue_prioritized_affinity_scheduler( *this, m_numThreads, true, _htstride );
+						_ts = new tbb_concurrent_queue_prioritized_affinity_scheduler( *this, subscribe, m_numThreads, true, _htstride );
 					} else {
-						_ts = new tbb_concurrent_queue_affinity_scheduler( *this, m_numThreads, true, _htstride );
+						_ts = new tbb_concurrent_queue_affinity_scheduler( *this, subscribe, m_numThreads, true, _htstride );
 					}
 				} 
 			}
@@ -138,7 +135,7 @@ namespace CnC {
                         else oss << "Using TBB_TASK scheduler" << _prior << _pin;
                     }
                 }
-				_ts = new simplest_scheduler( *this, m_numThreads, _htstride );
+				_ts = new simplest_scheduler( *this, subscribe, m_numThreads, _htstride );
             }
 			if( _first ) {
 				_first = false;
@@ -149,7 +146,12 @@ namespace CnC {
         void context_base::on_creation()
         {
             // on_create is only called if the context was created for distCnC on a remote process
+        }
+        
+        void context_base::fini_dist_ready()
+        {
             // -> let's start the dist-services
+            distributable_context::fini_dist_ready();
             m_scheduler->start_dist();
         }
 

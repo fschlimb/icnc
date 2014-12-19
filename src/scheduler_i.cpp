@@ -44,8 +44,14 @@
 #include <tbb/compat/thread>
 #include <tbb/enumerable_thread_specific.h>
 #include <cnc/default_tuner.h>
-#include <iostream>
 
+#include <src/dist/distributed_scheduler.h>
+#include <src/dist/sharing_distributed_scheduler.h>
+#include <src/dist/donating_distributed_scheduler.h>
+#include <src/dist/stealing_distributed_scheduler.h>
+#include <src/dist/hybrid_distributed_scheduler.h>
+
+#include <iostream>
 
 namespace CnC {
     namespace Internal {
@@ -73,11 +79,12 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        scheduler_i::scheduler_i( context_base & c )
+        scheduler_i::scheduler_i( context_base & c, bool subscribe )
             : distributable( "schedulerNN" ),
               m_context( c ),
               m_barrier( NULL ),
               m_step( current() ),
+              m_balancer( NULL ),
               m_pendingSteps(),
               m_seqSteps(),
               m_mutex(),
@@ -92,13 +99,45 @@ namespace CnC {
             if( 0 == distributor::myPid() || distributor::distributed_env() ) {
                 m_barrier = new tbb::concurrent_bounded_queue< int >;
             }
+            
+            if( subscribe ) {
+                c.subscribe( this );
+            }
         }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         void scheduler_i::start_dist()
         {
-            m_root = -1;
+            CNC_ASSERT( subscribed() );
+            {Speaker oss; oss << "scheduler_i::start_dist() ";}
+            if( distributor::active() ) {
+                Speaker oss; 
+                const char * _sched = getenv( "CNC_LOAD_BALANCER" );
+                if (!_sched) {
+                    m_balancer = NULL;
+                    oss << "Using no load balancer (by default).";
+                } else if (!strcmp(_sched,"HYBRID")) {
+                    m_balancer = new hybrid_distributed_scheduler( m_context, *this );
+                    oss << "Using hybrid load balancer.";
+                } else if (!strcmp(_sched,"STEALING")) {
+                    m_balancer = new stealing_distributed_scheduler( m_context, *this );
+                    oss << "Using stealing load balancer.";
+                } else if (!strcmp(_sched,"DONATING")) {
+                    m_balancer = new donating_distributed_scheduler( m_context, *this );
+                    oss << "Using donating load balancer.";
+                } else if (!strcmp(_sched,"SHARING")) {
+                    m_balancer = new sharing_distributed_scheduler( m_context, *this );
+                    oss << "Using sharing load balancer.";
+                } else if (!strcmp(_sched,"NO")) {
+                    m_balancer = NULL;
+                    oss << "Using no load balancer.";
+                } else {
+                    m_balancer = new hybrid_distributed_scheduler( m_context, *this );
+                    oss << "Unsupported load balancer \"" << _sched << "\", using default load balancer (HYBRID)";
+                }
+            }
+            m_root = distributor::myPid() ? -1 : 0;
         }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -114,6 +153,9 @@ namespace CnC {
             m_context.print_scheduler_statistics();
             delete m_barrier;
             set_current( const_cast< schedulable * >( m_step ) );
+            if( subscribed() ) {
+                m_context.unsubscribe( this );
+            }
         }
                 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -284,6 +326,11 @@ namespace CnC {
         // increases the ref-count through suspend by one, execute methods must unsuspend!
         void scheduler_i::do_execute( schedulable * s )
         {
+            if( m_balancer && m_balancer->migrate_step( m_userStepsInFlight, s ) ) {
+                delete s;
+                set_current( NULL );
+                return;
+            }
             do {
                 set_current( s );
                 if( s->from_pending() ) { //from_pending() ) {  
@@ -363,7 +410,6 @@ namespace CnC {
         /// however, the real wait() can only be issued by the owner/creator (currently only the host)
         void scheduler_i::init_wait( bool send )
         {
-            std::cerr << subscribed() << " " << distributor::active() << " " << m_context.distributed() << std::endl;
             CNC_ASSERT( subscribed() );
             CNC_ASSERT( distributor::active() );
             CNC_ASSERT( m_context.distributed() );

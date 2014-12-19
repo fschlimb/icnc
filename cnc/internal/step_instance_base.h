@@ -75,7 +75,7 @@ namespace CnC {
             inline void stop_put();
     
             /// set time log collection for this instance
-            inline void enable_timing();
+            void enable_timing();
 
             inline get_list& glist();
 
@@ -133,11 +133,6 @@ namespace CnC {
         {
             if( ! m_timer ) return;
             m_timer->stop_put();
-        }
-
-        inline void step_instance_base::enable_timing()
-        {
-            m_timer = new chronometer::step_timer;
         }
 
         inline get_list& step_instance_base::glist()
