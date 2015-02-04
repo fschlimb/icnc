@@ -1,5 +1,5 @@
 /* *******************************************************************************
- *  Copyright (c) 2010-2014, Intel Corporation
+ *  Copyright (c) 2007-2014, Intel Corporation
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are met:
@@ -25,8 +25,8 @@
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************************/
 
-#ifndef _CnC_DONATING_DISTRIBUTED_SCHEDULER_H
-#define _CnC_DONATING_DISTRIBUTED_SCHEDULER_H
+#ifndef _CnC_STEALING_LOAD_BALANCER_H
+#define _CnC_STEALING_LOAD_BALANCER_H
 
 #include <src/dist/distributed_scheduler.h>
 #include <tbb/atomic.h>
@@ -40,36 +40,25 @@ namespace CnC {
 
         class schedulable;
 
-        class donating_distributed_scheduler : public distributed_scheduler 
+        class stealing_load_balancer : public distributed_scheduler
         {
         public:
-            donating_distributed_scheduler( context_base & ctxt, scheduler_i & scheduler );
-            virtual ~donating_distributed_scheduler();
-            virtual void loadBalanceCallback();
+            stealing_load_balancer( context_base & ctxt, scheduler_i & scheduler );
+            virtual ~stealing_load_balancer();
+            void progress( unsigned int nsif );
             virtual void on_received_workchunk( CnC::serializer* ser, int senderId, int n );
             bool postRequest();
             virtual bool migrate_step(unsigned int, schedulable* s);
-        protected:
-            virtual void recv_work_request( CnC::serializer* ser, int senderId )
-            { CNC_ABORT( "Donating scheduler cannot serve work requests." ); }
+
         private:
-            bool hasClientRequests(int& clientId);
-            void putClientRequest(int clientId);
-            virtual void recv_state_update( CnC::serializer* ser, int senderId );
-            bool needsBcast(int v);
-            void doBcast();
-            static const int LOG_BCAST_FREQUENCY = 7;
-            static const int FEW_STEPS = (1<<8);
-            static const int ENOUGH_STEPS = (1<<9);
+            virtual void recv_work_request( CnC::serializer* ser, int senderId );
 
-            tbb::atomic<long>* m_clientState;
-            tbb::atomic<int> m_bcastCounter;
+            tbb::atomic<int>* m_clientRequests;
+            tbb::atomic<int>* m_sentRequests;
             tbb::atomic<int> m_last;
-
-            static const long UNKNOWN = -100;
         };
 
     } // namespace Internal
 } // namespace CnC
 
-#endif // _CnC_DONATING_DISTRIBUTED_SCHEDULER_H
+#endif // _CnC_STEALING_LOAD_BALANCER_H

@@ -46,10 +46,10 @@
 #include <cnc/default_tuner.h>
 
 #include <src/dist/distributed_scheduler.h>
-#include <src/dist/sharing_distributed_scheduler.h>
-#include <src/dist/donating_distributed_scheduler.h>
-#include <src/dist/stealing_distributed_scheduler.h>
-#include <src/dist/hybrid_distributed_scheduler.h>
+//#include <src/dist/sharing_distributed_scheduler.h>
+//#include <src/dist/donating_distributed_scheduler.h>
+#include <src/dist/stealing_load_balancer.h>
+//#include <src/dist/hybrid_distributed_scheduler.h>
 
 #include <iostream>
 
@@ -117,23 +117,23 @@ namespace CnC {
                 if (!_sched) {
                     m_balancer = NULL;
                     oss << "Using no load balancer (by default).";
-                } else if (!strcmp(_sched,"HYBRID")) {
-                    m_balancer = new hybrid_distributed_scheduler( m_context, *this );
-                    oss << "Using hybrid load balancer.";
+                // } else if (!strcmp(_sched,"HYBRID")) {
+                //     m_balancer = new hybrid_distributed_scheduler( m_context, *this );
+                //     oss << "Using hybrid load balancer.";
                 } else if (!strcmp(_sched,"STEALING")) {
-                    m_balancer = new stealing_distributed_scheduler( m_context, *this );
+                    m_balancer = new stealing_load_balancer( m_context, *this );
                     oss << "Using stealing load balancer.";
-                } else if (!strcmp(_sched,"DONATING")) {
-                    m_balancer = new donating_distributed_scheduler( m_context, *this );
-                    oss << "Using donating load balancer.";
-                } else if (!strcmp(_sched,"SHARING")) {
-                    m_balancer = new sharing_distributed_scheduler( m_context, *this );
-                    oss << "Using sharing load balancer.";
-                } else if (!strcmp(_sched,"NO")) {
-                    m_balancer = NULL;
-                    oss << "Using no load balancer.";
+                // } else if (!strcmp(_sched,"DONATING")) {
+                //     m_balancer = new donating_distributed_scheduler( m_context, *this );
+                //     oss << "Using donating load balancer.";
+                // } else if (!strcmp(_sched,"SHARING")) {
+                //     m_balancer = new sharing_distributed_scheduler( m_context, *this );
+                //     oss << "Using sharing load balancer.";
+                // } else if (!strcmp(_sched,"NO")) {
+                //     m_balancer = NULL;
+                //     oss << "Using no load balancer.";
                 } else {
-                    m_balancer = new hybrid_distributed_scheduler( m_context, *this );
+                    m_balancer = new stealing_load_balancer( m_context, *this );
                     oss << "Unsupported load balancer \"" << _sched << "\", using default load balancer (HYBRID)";
                 }
             }
@@ -161,7 +161,7 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-		bool scheduler_i::prepare( schedulable * stepInstance, bool compute_on, bool do_schedule, bool is_service_task )
+		bool scheduler_i::prepare( schedulable * stepInstance, bool compute_on, bool do_schedule )
         {
             // we must fake that we currently really execute the new step
             step_delayer sD;
@@ -326,7 +326,8 @@ namespace CnC {
         // increases the ref-count through suspend by one, execute methods must unsuspend!
         void scheduler_i::do_execute( schedulable * s )
         {
-            if( m_balancer && m_balancer->migrate_step( m_userStepsInFlight, s ) ) {
+            if( m_balancer && !s->is_service_task() && m_balancer->migrate_step( m_userStepsInFlight, s ) ) {
+                --m_userStepsInFlight;
                 delete s;
                 set_current( NULL );
                 return;

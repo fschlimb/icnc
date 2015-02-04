@@ -76,7 +76,7 @@ namespace CnC {
         void hybrid_distributed_scheduler::progress( unsigned int nsif )
         {
             if( needs_bcast( nsif ) ) {
-                {Speaker spkr; spkr << "hybrid_distributed_scheduler: need bcast";}
+                //                {Speaker spkr; spkr << "hybrid_distributed_scheduler: need bcast";}
                 do_bcast( nsif );
             }
             Eo(nsif);
@@ -91,7 +91,6 @@ namespace CnC {
                     }
                 }
             }
-            {Speaker spkr; spkr << "hybrid_distributed_scheduler: done progress()";}
         }
 
         /* virtual */ void hybrid_distributed_scheduler::recv_work_request( CnC::serializer* ser, int senderId ){
@@ -116,6 +115,7 @@ namespace CnC {
         void hybrid_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId )
         {
             // synchronization is wrong
+            {Speaker spkr; spkr << "hybrid_distributed_scheduler::on_received_workchunk";}
             if (this->m_scheduler.num_steps_in_flight() >= ENOUGH_STEPS){
                 if (m_sentRequests[0].compare_and_swap(0,1)==1){
                     if (!bcast_work_request()){
@@ -127,6 +127,7 @@ namespace CnC {
 
         bool hybrid_distributed_scheduler::migrate_step( unsigned int nsif, schedulable * s )
         {
+            progress( nsif );
             if( nsif <= ENOUGH_STEPS ) return false;
             Eo("many steps");
             int client = -1;

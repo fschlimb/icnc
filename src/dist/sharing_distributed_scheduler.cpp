@@ -111,7 +111,7 @@ namespace CnC {
             }
         }
 
-        void sharing_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId )
+        void sharing_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId, int n )
         {
         }
 

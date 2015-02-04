@@ -47,7 +47,7 @@ namespace CnC {
                 stealing_distributed_scheduler( context_base & ctxt, scheduler_i & scheduler );
                 virtual ~stealing_distributed_scheduler();
                 virtual void loadBalanceCallback();
-                virtual void on_received_workchunk( CnC::serializer* ser, int senderId );
+            virtual void on_received_workchunk( CnC::serializer* ser, int senderId, int n );
                 bool postRequest();
                 virtual bool migrate_step(unsigned int, schedulable* s);
 

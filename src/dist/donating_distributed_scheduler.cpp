@@ -69,7 +69,7 @@ namespace CnC {
             return z == 0;
         }
 
-        void donating_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId )
+        void donating_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId, int n )
         {
         }
 

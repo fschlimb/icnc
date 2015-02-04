@@ -107,7 +107,7 @@ namespace CnC {
             }
         }
 
-        void stealing_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId )
+        void stealing_distributed_scheduler::on_received_workchunk( CnC::serializer* ser, int senderId, int n )
         {
             // synchronization is wrong
             // TODO: check bcast here

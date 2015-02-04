@@ -104,6 +104,8 @@ namespace CnC {
             inline bool is_pending() const;
             /// returns true if step needs serial execution
             inline bool is_sequentialized() const;
+            /// returns true if step is a service task
+            inline bool is_service_task() const;
             /// returns the scheduler it is assigned to
             scheduler_i & scheduler() const;
 
@@ -130,9 +132,10 @@ namespace CnC {
             tbb::atomic< bool > m_wasSuspendedSinceReset;  // should be set to false, when execution starts
             //            bool                m_time;
             char                m_status;
-            bool                m_inPending;
-            bool                m_sequentialize;
-            bool                m_hadPut;
+            bool                m_inPending:1;
+            bool                m_sequentialize:1;
+            bool                m_hadPut:1;
+            bool                m_isServiceTask:1;
             template< class T > friend class tagged_step_instance;
             friend class scheduler_i; // FIXME
         };
@@ -151,7 +154,8 @@ namespace CnC {
               m_status( CNC_Unprepared ),
               m_inPending( false ),
               m_sequentialize( false ),
-              m_hadPut( false )
+              m_hadPut( false ),
+              m_isServiceTask( false )
               
         {
             m_nSuspenders = 0;
@@ -257,6 +261,12 @@ namespace CnC {
         } // not thread safe! To be used inside prepare and/or execute only!
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+        inline bool schedulable::is_service_task() const
+        {
+            return m_isServiceTask;
+        }
+
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         inline scheduler_i & schedulable::scheduler() const 

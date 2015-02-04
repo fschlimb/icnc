@@ -36,11 +36,6 @@
 
 #include <iostream>
 #include <sstream>
-#if defined(_DEBUG)
-#define Eo(x) { Speaker spkr; spkr << " " << #x << " = " << (x); }
-#else
-#define Eo(x)
-#endif
 
 namespace CnC {
     namespace Internal
@@ -52,7 +47,6 @@ namespace CnC {
               m_context( ctxt )
               
         {
-            Eo("distributed_scheduler::distributed_scheduler");
             instance = this;
             m_context.subscribe( this );
             std::cerr << "my rank = " << distributor::myPid() << std::endl;
@@ -70,12 +64,11 @@ namespace CnC {
             char marker;
             int senderId;
             (*ser) & marker & senderId;
-            Eo(int(marker));Eo(int(WORK_REQUEST));
             if (marker == WORK_REQUEST) {
                 recv_work_request( ser, senderId );
             } else if (marker == WORK_CHUNK){
-                recv_steps( *ser );
-                on_received_workchunk( ser, senderId );
+                int n = recv_steps( *ser );
+                on_received_workchunk( ser, senderId, n );
             } else if (marker == STATE_UPDATE){
                 recv_state_update( ser, senderId );
             } else {
@@ -85,19 +78,15 @@ namespace CnC {
 
         bool distributed_scheduler::bcast_work_request()
         {
-            {Speaker spkr; spkr << "distributed_scheduler::bcast_work_request()";}
+            if(false){Speaker spkr; spkr << "distributed_scheduler::bcast_work_request()";}
             CNC_ASSERT( m_topo.neighbors().size() );
 
-            {Speaker spkr; spkr << "distributed_scheduler::bcast_work_request() getting serializer";}
             CnC::serializer* ser = m_context.new_serializer( this );
-            {Speaker spkr; spkr << "distributed_scheduler::bcast_work_request() got serializer";}
             char marker = WORK_REQUEST;
             int myId = distributor::myPid();
             (*ser) & marker & myId;
-            {Speaker spkr; spkr << "distributed_scheduler::bcast_work_request() before bcast";}
             m_context.bcast_msg( ser, m_topo.neighbors().data(), m_topo.neighbors().size() );
             //m_context.bcast_msg( ser );
-            {Speaker spkr; spkr << "distributed_scheduler: done bcast_work_request()";}
             return true;
         }
 
@@ -135,13 +124,14 @@ namespace CnC {
             m_context.send_msg( ser, clientId );
         }
 
-        void distributed_scheduler::recv_steps( CnC::serializer & ser )
+        int distributed_scheduler::recv_steps( CnC::serializer & ser )
         {
             step_vec_type::size_type sz;
             ser & sz;
-            while( sz-- ) {
+            for( size_type i = 0; i < sz; ++i ) {
                 m_context.recv_msg( &ser );
             }
+            return sz;
         }
 
         void distributed_scheduler::bcast_state_update( int me, int value )

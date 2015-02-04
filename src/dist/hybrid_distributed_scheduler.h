@@ -25,12 +25,11 @@
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  ********************************************************************************/
 
-#ifndef _CnC_HYBRID_DISTRIBUTED_SCHEDULER_H
-#define _CnC_HYBRID_DISTRIBUTED_SCHEDULER_H
+#ifndef _CnC_STEALING_LOAD_BALANCER_H
+#define _CnC_STEALING_LOAD_BALANCER_H
 
 #include <src/dist/distributed_scheduler.h>
 #include <tbb/atomic.h>
-#include <tbb/spin_mutex.h>
 #include <tbb/concurrent_queue.h>
 
 namespace CnC {
@@ -41,34 +40,31 @@ namespace CnC {
 
         class schedulable;
 
-        class hybrid_distributed_scheduler : public distributed_scheduler
+        class stealing_load_balancer : public distributed_scheduler
         {
-            public:
-                hybrid_distributed_scheduler( context_base & ctxt, scheduler_i & scheduler );
-                virtual ~hybrid_distributed_scheduler();
+        public:
+            stealing_load_balancer( context_base & ctxt, scheduler_i & scheduler );
+            virtual ~stealing_load_balancer();
             void progress( unsigned int nsif );
-                virtual void on_received_workchunk( CnC::serializer* ser, int senderId );
-                bool postRequest();
-                virtual bool migrate_step(unsigned int, schedulable* s);
+            virtual void on_received_workchunk( CnC::serializer* ser, int senderId, int n );
+            bool postRequest();
+            virtual bool migrate_step(unsigned int, schedulable* s);
 
-            private:
-                virtual void recv_work_request( CnC::serializer* ser, int senderId );
+        private:
+            virtual void recv_work_request( CnC::serializer* ser, int senderId );
             bool needs_bcast( int nsif );
             void do_bcast( unsigned int nsif );
-                static const int LOG_BCAST_FREQUENCY = 9;
-                static const int FEW_STEPS = (1<<8);
-                static const int ENOUGH_STEPS = FEW_STEPS<<2;
-                static const int MANY_STEPS = ENOUGH_STEPS<<2;
+            static const int LOG_BCAST_FREQUENCY = 9;
+            static const int FEW_STEPS = (1<<8);
+            static const int ENOUGH_STEPS = FEW_STEPS<<2;
+            static const int MANY_STEPS = ENOUGH_STEPS<<2;
 
-                tbb::atomic<int>* m_clientRequests;
-                tbb::atomic<long>* m_clientState;
-                tbb::atomic<int>* m_sentRequests;
-                tbb::atomic<int> m_bcastCounter;
-                tbb::atomic<int> m_last;
-                tbb::spin_mutex send_request_mutex;
+            tbb::atomic<int>* m_clientRequests;
+            tbb::atomic<int>* m_sentRequests;
+            tbb::atomic<int> m_last;
         };
 
     } // namespace Internal
 } // namespace CnC
 
-#endif // _CnC_HYBRID_DISTRIBUTED_SCHEDULER_H
+#endif // _CnC_STEALING_LOAD_BALANCER_H

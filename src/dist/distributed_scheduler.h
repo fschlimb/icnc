@@ -93,7 +93,7 @@ namespace CnC {
             void serialize_step( CnC::serializer & ser, schedulable & step );
             void send_steps_to_client( int clientId, schedulable ** steps, size_t n  );
             static const int MAX_STEP_GROUP_SIZE = (1<<4);
-            void recv_steps( CnC::serializer & ser );
+            int recv_steps( CnC::serializer & ser );
             void bcast_state_update( int me, int value );
             bool bcast_work_request();
             topology m_topo;
@@ -103,7 +103,7 @@ namespace CnC {
             context_base & m_context;
             // yeap, this is a singleton, because scheduler_i::do_execute() is static
             static distributed_scheduler* instance;
-            virtual void on_received_workchunk( CnC::serializer* ser, int senderId ) {}
+            virtual void on_received_workchunk( CnC::serializer* ser, int senderId, int n ) {}
             virtual void recv_state_update( CnC::serializer* ser, int senderId ){}
         };
 

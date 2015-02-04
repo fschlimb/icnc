@@ -68,7 +68,8 @@ namespace CnC {
               m_func(),
               m_arg( arg )
         {
-            sched.prepare( this, false, true, true );
+            m_isServiceTask = true;
+            sched.prepare( this, false, true );
         }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -79,7 +80,8 @@ namespace CnC {
               m_func( f ),
               m_arg( arg )              
         {
-            sched.prepare( this, false, true, true );
+            m_isServiceTask = true;
+            sched.prepare( this, false, true );
         }
 
         template< typename F, typename Arg >

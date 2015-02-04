@@ -99,7 +99,7 @@ namespace CnC {
             /// Internally, the parameter do_schedule is used to bypass extra scheduling overhead when unsplittable range is executed.
             /// Doesn't apply to compute_on if target == NO_COMPUTE_ON.
             /// returns whether the step was scheduled (you better delete it if not)
-            bool prepare( schedulable *, bool compute_on = true, bool do_schedule = true, bool is_service_task = false );
+            bool prepare( schedulable *, bool compute_on = true, bool do_schedule = true );
 
             /// \brief put current step instance on hold to be resumed at a possibly later point in time
             ///
