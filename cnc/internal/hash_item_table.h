@@ -84,12 +84,7 @@ namespace CnC {
 
             /// Puts an item into table if not present and acquires the accessor/lock for it.
             /// \return true if inserted, false if already there
-            bool put_item( const Tag &, const ItemT *, const int getcount, const int owner, accessor & );
-
-            /// Returns item for given tag (for reading only).
-            /// No other thread is allowed to write or delete
-            /// the returned item as long the caller holds a pointer to it.
-            const ItemT * get_item( const Tag &  ) const;
+            bool put_item( const Tag &, const ItemT *, const int getcount, const int owner, bool dsa, accessor & );
 
             /// If item is present, returns item and get-count, accessor will be empty
             /// If item not present, creates and protects the entry with the given accesssor/lock.
@@ -266,11 +261,15 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         template< typename Tag, typename ItemT, typename Coll >
-        bool hash_item_table< Tag, ItemT, Coll >::put_item( const Tag & t, const ItemT * item, const int getcount, const int owner, accessor & a )
+        bool hash_item_table< Tag, ItemT, Coll >::put_item( const Tag & t, const ItemT * item, const int getcount, const int owner, bool dsa, accessor & a )
         {
             //            typename mutex_type::scoped_lock _lock( m_mutex );
             m_map.insert( a.acc(), t );
-            if( a.item() != NULL ) return false;
+            if( a.item() != NULL ) {
+                if( dsa ) return false;
+                a.acc()->second.m_item = item;
+                return true;
+            }
             a.acc()->second.m_item = item;
             // this is a concurrency issue: in dist-mode we might receive a decrement request prior to the actual item!
             if( getcount != item_properties::NO_GET_COUNT ) {
@@ -283,15 +282,6 @@ namespace CnC {
             return true;
         }
 
-        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        template< typename Tag, typename ItemT, typename Coll >
-        const ItemT * hash_item_table< Tag, ItemT, Coll >::get_item( const Tag & t ) const
-        {
-            //            typename mutex_type::scoped_lock _lock( m_mutex );
-            typename map_t::const_accessor a;
-            return m_map.find( a, t ) ? a->second.m_item : NULL;
-        }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         

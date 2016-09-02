@@ -94,12 +94,7 @@ namespace CnC {
 
             /// Puts an item into table if not present and acquires the accessor/lock for it.
             /// \return true if inserted, false if already there
-            bool put_item( const Tag &, const ItemT *, const int getcount, const int owner, accessor & );
-
-            /// Returns item for given tag (for reading only).
-            /// No other thread is allowed to write or delete
-            /// the returned item as long the caller holds a pointer to it.
-            const ItemT * get_item( const Tag &  ) const;
+            bool put_item( const Tag &, const ItemT *, const int getcount, const int owner, bool dsa, accessor & );
 
             /// If item is present, returns item and get-count, accessor will be empty.
             /// If item not present, creates and protects the entry with the given accesssor/lock.
@@ -293,7 +288,7 @@ namespace CnC {
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
         template< typename Tag, typename ItemT, typename Coll >
-        bool vec_item_table< Tag, ItemT, Coll >::put_item( const Tag & t, const ItemT * item, const int getcount, const int owner, accessor & a )
+        bool vec_item_table< Tag, ItemT, Coll >::put_item( const Tag & t, const ItemT * item, const int getcount, const int owner, bool dsa, accessor & a )
         {
             CNC_ASSERT( t >= 0 && static_cast< typename map_t::size_type >( t ) < m_map.size() );
             data_t * _data = &m_map[t];
@@ -312,18 +307,14 @@ namespace CnC {
                 if( _data->m_item.compare_and_swap( item, NULL ) != NULL ) return false;
                 m_size++;
                 return true;
-            } // else
+            } else if(! dsa) {
+                _data->m_item = item;
+                return true;
+            }
             CNC_ASSERT( _data->m_prop.owner() == owner );
             return false;
         }
 
-        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        
-        template< typename Tag, typename ItemT, typename Coll >
-        const ItemT * vec_item_table< Tag, ItemT, Coll >::get_item( const Tag & t ) const
-        {
-            return m_map[t].m_item;
-        }
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         

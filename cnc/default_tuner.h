@@ -511,6 +511,23 @@ namespace CnC {
         {
             return PRODUCER_UNKNOWN;
         }
+
+
+        /// \brief Tells the runtime if this item is DSA (dynamic single asignment), e.g. write-once
+        ///
+        /// Non-DSA items means
+        /// - Item value can change over time
+        /// - An item get returns one of the values which were provided with a put.
+        ///   The runtime will make its best effort to return the latest value, but no guarantees
+        /// - Similarly, callbacks (for graphs) are called only at first put
+        /// - The application will be non-deterministic
+        /// \param tag the tag which identifies the item
+        /// \return true if item is DSA (default). false otherwise
+        template< typename Tag >
+        bool is_dsa( const Tag & tag ) const
+        {
+            return true;
+        };
     };
 
     // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

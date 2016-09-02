@@ -753,11 +753,14 @@ namespace CnC {
                 // It also simplifies thinking about races, because we always
                 // know we have something in this slot in the table.
                 typename table_type::accessor aw;
+                const bool isdsa = m_tuner.is_dsa( user_tag );
                 // we'll hold a lock/accessor for the entry after calling tagItemTable.put_item
-                if( tagItemTable.put_item( user_tag, item, getcount, owner, aw ) ) {
+                if( tagItemTable.put_item( user_tag, item, getcount, owner, isdsa, aw ) ) {
                     // There might be queue of step instances, waiting for this Put.
-                    // -> schedule all of the step instances in the queue.                
+                    // -> schedule all of the step instances in the queue.
+                    // It could also be a overwriting, non-DSA put
                     item_properties * _prop = aw.properties();
+                    CNC_ASSERT( isdsa || _prop->m_suspendGroup == NULL );
                     if( _prop->m_suspendGroup ) {
                         if( scheduler_i::resume( _prop->m_suspendGroup ) ) {
                             // We need to write to the blocking queue if the environment
@@ -767,21 +770,46 @@ namespace CnC {
                         CNC_ASSERT( _prop->m_suspendGroup == NULL );
                     }
 #ifdef _DIST_CNC_
-                    if( fromRemote ) _prop->unset_creator();
+                    if( fromRemote && isdsa ) _prop->unset_creator();
                     if( _prop->m_subscribers ) {
                         if( _prop->am_owner() ) {
                             this->deliver( user_tag, item, *_prop->m_subscribers, IC::DELIVER, distributor::myPid() );
                         }
-                        delete _prop->m_subscribers;
-                        _prop->m_subscribers = NULL;
+                        // we do not need the subscribers any more, unless this is a non-DSA item
+                        if( isdsa ) {
+                            delete _prop->m_subscribers;
+                            _prop->m_subscribers = NULL;
+                        }
                     }
 #endif 
-                    if( owner == distributor::myPid() ) {
+                    if( isdsa && owner == distributor::myPid() ) {
                         for( typename callback_vec::iterator i = m_onPuts.begin(); i != m_onPuts.end(); ++i ) {
                             (*i)->on_put( user_tag, *item );
                         }
                     }
                 } else {
+                    // The insert failed. There is already a record in the table.
+                    // We still hold the lock, and aw points to the record.
+
+                    // We cannot find data in a fully correct program.
+                    // If a step instance did a put before all gets, it might get requeued after a put.
+                    // On subsequent executions, the the step instance will put the same items.
+                    // The new value should equal the old value. We cannot check without requiring
+                    // operator==, so let's issue a warning.
+                    // In case of distCnC, we might receive the same item again, so let's supress the warning if
+                    // we are not the owner
+
+                    uncreate( item );
+                    item_properties * _prop = aw.properties();
+                    CNC_ASSERT( ! _prop->m_suspendGroup );
+                    if( ! fromRemote || _prop->am_owner() ) {
+#ifdef _DIST_CNC_
+                        CNC_ASSERT( ! _prop->m_subscribers );
+#endif
+                        Speaker oss( std::cerr );
+                        oss << "Warning:";
+                        format( oss, "multiple assignments to same item ", user_tag, m_context.current_step_instance() );
+                    }
 #ifdef _DIST_CNC_
                     if( fromRemote ) {
                         serializer _ser;
@@ -789,27 +817,6 @@ namespace CnC {
                         _ser.cleanup( *item );
                     }
 #endif
-                    uncreate( item );
-                    // The insert failed. There is already a record in the table.
-                    // We still hold the lock, and aw points to the record.
-                    item_properties * _prop = aw.properties();
-
-                    // We cannot find data in a fully correct program.
-                    // If a step instance did a put before all gets, it might get requeued after a put.
-                    // On subsequent executions, the the step instance will put the same items.
-                    // The new value should equal the old value. We cannot check without requiring
-                    // operator==, so let's issue a warning.
-                    // in case of distCnC, we might receive the same item again, so let's supress the warning if
-                    // we are not the owner
-                    CNC_ASSERT( ! _prop->m_suspendGroup );
-#ifdef _DIST_CNC_
-                    CNC_ASSERT( ! _prop->m_subscribers );
-#endif
-                    if( ! fromRemote || _prop->am_owner() ) {
-                        Speaker oss( std::cerr );
-                        oss << "Warning:";
-                        format( oss, "multiple assignments to same item ", user_tag, m_context.current_step_instance() );
-                    }
                 }
                 
                 if ( trace_level() > 0 ) {
